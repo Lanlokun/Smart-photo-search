@@ -38,6 +38,5 @@ htmlcov/
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 
-
 # YOLO model weights
 *.pt
