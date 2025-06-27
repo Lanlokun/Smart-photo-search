@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Smart Photo Search{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #fafafa;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    header, footer {
+      text-align: center;
+      color: #4a148c;
+    }
+
+    header {
+      margin-bottom: 25px;
+    }
+
+    footer {
+      margin-top: auto;
+      padding: 15px 0;
+      font-size: 0.9rem;
+      border-top: 1px solid #ddd;
+      opacity: 0.7;
+    }
+
+    h1 {
+      margin: 0;
+    }
+
+    main {
+      flex-grow: 1;
+    }
+
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    input[type="file"], input[type="text"], input[type="submit"] {
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    input[type="file"], input[type="text"] {
+      border: 1px solid #ccc;
+    }
+
+    input[type="submit"] {
+      background-color: #4a148c;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+    }
+
+    input[type="submit"]:hover {
+      background-color: #6a1b9a;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 15px;
+    }
+
+    .image-card {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    }
+
+    .image-card img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .menu-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.5);
+      border: none;
+      color: white;
+      border-radius: 50%;
+      padding: 4px;
+      cursor: pointer;
+      font-size: 20px;
+      z-index: 2;
+    }
+
+    .dropdown {
+      position: absolute;
+      top: 35px;
+      right: 8px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      display: none;
+      z-index: 3;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .dropdown form {
+      margin: 0;
+    }
+
+    .dropdown button {
+      background: none;
+      border: none;
+      color: #e53935;
+      padding: 10px 15px;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .dropdown button:hover {
+      background: #fce4ec;
+    }
+
+    @media (max-width: 480px) {
+      input[type="file"], input[type="text"], input[type="submit"] {
+        flex: 1 1 100%;
+      }
+    }
+
+    .pagination {
+        text-align: center;
+        margin: 20px 0;
+        font-weight: 500;
+        color: #4a148c;
+    }
+
+    .pagination a {
+        color: #4a148c;
+        margin: 0 15px;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .pagination a:hover {
+        text-decoration: underline;
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <main>
+     {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            {% for message in messages %}
+              <span class="block sm:inline">{{ message }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+    {% endwith %}
+
+        {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    &copy; {{ current_year }} Smart Photo Search. All rights reserved.
+  </footer>
+
+  {% block scripts %}
+  <script>
+    function toggleMenu(event) {
+      event.stopPropagation();
+      document.querySelectorAll('.dropdown').forEach(d => d.style.display = 'none');
+      const dropdown = event.currentTarget.nextElementSibling;
+      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    }
+
+    document.addEventListener('click', function () {
+      document.querySelectorAll('.dropdown').forEach(d => d.style.display = 'none');
+    });
+  </script>
+  {% endblock %}
+</body>
+</html>

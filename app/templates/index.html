@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Photo Insight{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+<div class="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 flex flex-col">
+  <header class="bg-purple-600 text-white p-4 text-center shadow-lg">
+    <h1 class="text-4xl font-bold">Smart Photo Search</h1>
+    <p class="text-sm mt-1">Smart AI Descriptions, Instant Photo Search</p>
+  </header>
+
+  <section class="text-center px-4 py-6">
+    <p class="text-gray-700 text-lg max-w-3xl mx-auto">
+      <strong>Smart Photo Search</strong> brings clarity to your photo collection.
+      Upload images, let AI identify and tag their contents, and find any moment instantly with natural language searches.
+      Effortlessly organize and rediscover your memories.
+    </p>
+  </section>
+
+  <div class="flex-grow container mx-auto px-4 py-8 max-w-6xl">
+    <form id="uploadForm" method="POST" enctype="multipart/form-data" class="mb-6 flex flex-col sm:flex-row gap-4 p-4 rounded-lg ">
+      <input type="file" name="file" accept="image/*" required class="border rounded-lg p-2 text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-purple-600 file:text-white hover:file:bg-purple-700" />
+      <input type="hidden" name="query" value="" />
+      <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition">Upload Photo</button>
+    </form>
+
+    <div id="uploadProgressContainer" class="hidden mb-6">
+      <progress id="uploadProgress" value="0" max="100" class="w-full h-2 rounded bg-purple-200"></progress>
+      <p id="uploadStatus" class="text-center text-sm text-purple-600 mt-2"></p>
+    </div>
+
+    <form method="GET" class="mb-8 p-4 rounded-lg">
+      <div class="flex flex-col sm:flex-row items-stretch gap-4 w-full">
+       <input
+          type="text"
+          name="query"
+          placeholder="Search by tags or describe the photo (e.g., 'a dog on the beach')"
+          title="Enter tags or a short description to find photos"
+          autocomplete="off"
+          value="{{ query | default('') }}"
+          class="w-full flex-grow border rounded-lg p-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        />
+
+        <button
+          type="submit"
+          class="flex-shrink-0 bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition"
+        >
+          Search
+        </button>
+        {% if query %}
+       <a
+        href="/"
+          class="flex-shrink-0 bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition"
+        >
+          Reset
+        </a>
+
+        {% endif %}
+      </div>
+      <ul
+        id="suggestionBox"
+        class="w-full bg-white border border-gray-200 rounded-lg mt-1 max-h-40 overflow-y-auto z-10 hidden"
+      ></ul>
+    </form>
+
+<div class="gallery grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" aria-live="polite" aria-label="Photo gallery">
+  {% for img, tags, mtime in images %}
+  <div class="image-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition">
+    <div class="relative">
+      <img src="{{ img }}" alt="Uploaded photo" class="w-full h-64 object-cover cursor-pointer" onclick="openModal('{{ img }}')" />
+      <button class="menu-btn absolute top-2 right-2 text-white hover:text-gray-200" onclick="toggleMenu(event)" aria-label="Open options menu">
+        <span class="material-icons">more_horiz</span>
+      </button>
+      <div class="dropdown hidden absolute top-10 right-2 bg-white border rounded shadow-md">
+        <form action="/delete/{{ img.split('/')[-1] }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this photo?');">
+          <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Delete</button>
+        </form>
+      </div>
+    </div>
+    <div class="p-4">
+      <p class="text-sm text-gray-500 mb-2">Uploaded: {{ mtime }}</p>
+      <div class="flex flex-wrap gap-2 mb-2">
+        {% for tag, confidence in tags %}
+        <a href="/?query={{ tag }}" class="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full hover:bg-purple-200 transition" title="Confidence: {{ confidence | round(2) }}">{{ tag }} ({{ confidence | round(2) }})</a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  {% if not images %}
+  <p class="text-center text-gray-500 col-span-full">No photos to show. Upload something!</p>
+  {% endif %}
+</div>
+
+    <div class="pagination flex justify-center items-center gap-4 mt-8 text-gray-600" role="navigation" aria-label="Pagination Navigation">
+      {% if page > 1 %}
+      <a href="/?page={{ page - 1 }}{% if query %}&query={{ query }}{% endif %}" class="text-purple-600 hover:text-purple-800">← Prev</a>
+      {% endif %}
+      <span>Page {{ page }} of {{ total_pages }}</span>
+      {% if page < total_pages %}
+      <a href="/?page={{ page + 1 }}{% if query %}&query={{ query }}{% endif %}" class="text-purple-600 hover:text-purple-800">Next →</a>
+      {% endif %}
+    </div>
+
+    <div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-4 max-w-3xl w-full">
+        <img id="modalImage" class="w-full max-h-[70vh] object-contain" />
+        <div class="flex justify-between mt-4">
+          <a id="downloadLink" download class="text-blue-500 hover:underline">Download</a>
+          <form id="deleteFormModal" method="POST">
+            <button type="submit" class="text-red-500 hover:underline">Delete</button>
+          </form>
+          <button onclick="closeModal()" class="text-gray-600 hover:text-gray-800">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openModal(imgSrc) {
+  const modal = document.getElementById('imageModal');
+  const modalImg = document.getElementById('modalImage');
+  const downloadLink = document.getElementById('downloadLink');
+  const deleteForm = document.getElementById('deleteFormModal');
+  modal.style.display = 'flex';
+  modalImg.src = imgSrc;
+  downloadLink.href = imgSrc;
+  deleteForm.action = `/delete/${imgSrc.split('/').pop()}`;
+}
+
+function closeModal() {
+  document.getElementById('imageModal').style.display = 'none';
+}
+
+function toggleMenu(event) {
+  const dropdown = event.currentTarget.nextElementSibling;
+  dropdown.classList.toggle('hidden');
+}
+
+function likeImage(filename) {
+  alert(`Liked image: ${filename}`);
+}
+
+function toggleComments(filename) {
+  const commentsSection = document.getElementById(`comments-${filename}`);
+  commentsSection.classList.toggle('hidden');
+}
+
+function addComment(filename) {
+  const commentInput = document.getElementById(`comment-input-${filename}`);
+  const commentText = commentInput.value.trim();
+  if (commentText) {
+    const commentList = document.getElementById(`comment-list-${filename}`);
+    const commentDiv = document.createElement('div');
+    commentDiv.textContent = commentText;
+    commentDiv.className = 'mb-1';
+    commentList.appendChild(commentDiv);
+    commentInput.value = '';
+  }
+}
+
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const form = e.target;
+  const formData = new FormData(form);
+  const xhr = new XMLHttpRequest();
+  const progressContainer = document.getElementById('uploadProgressContainer');
+  const progressBar = document.getElementById('uploadProgress');
+  const statusText = document.getElementById('uploadStatus');
+
+  progressContainer.classList.remove('hidden');
+  progressBar.value = 0;
+  statusText.textContent = 'Uploading...';
+
+  xhr.open('POST', '/', true);
+  xhr.setRequestHeader('Accept', 'application/json');
+
+  xhr.upload.onprogress = function(event) {
+    if (event.lengthComputable) {
+      const percentComplete = (event.loaded / event.total) * 100;
+      progressBar.value = percentComplete;
+      statusText.textContent = `Uploading... ${Math.round(percentComplete)}%`;
+    }
+  };
+
+  xhr.onload = function() {
+    progressBar.value = 100;
+    if (xhr.status >= 200 && xhr.status < 300) {
+      const response = JSON.parse(xhr.responseText);
+      statusText.textContent = response.message || 'Upload complete!';
+
+      // Show success message somewhere visible, e.g. a div you create dynamically
+      showMessage(response.message, 'success');
+      
+      setTimeout(() => {
+        progressContainer.classList.add('hidden');
+        statusText.textContent = '';
+        form.reset();
+        // Optionally reload images via AJAX or reload page if you want to show new uploads
+        window.location.reload();  // simple way to refresh gallery
+      }, 1500);
+    } else {
+      const response = JSON.parse(xhr.responseText);
+      statusText.textContent = response.message || 'Upload failed. Please try again.';
+      showMessage(response.message || 'Upload failed.', 'error');
+      progressContainer.classList.add('hidden');
+    }
+  };
+
+  xhr.onerror = function() {
+    statusText.textContent = 'Upload error. Please check your connection.';
+    showMessage('Upload error. Please check your connection.', 'error');
+    progressContainer.classList.add('hidden');
+  };
+
+  xhr.send(formData);
+});
+
+function showMessage(message, type = 'info') {
+  // Remove old message first if exists
+  const oldMsg = document.getElementById('dynamicMessage');
+  if (oldMsg) oldMsg.remove();
+
+  const msgDiv = document.createElement('div');
+  msgDiv.id = 'dynamicMessage';
+  msgDiv.textContent = message;
+
+  msgDiv.style.position = 'fixed';
+  msgDiv.style.top = '10px';
+  msgDiv.style.left = '50%';
+  msgDiv.style.transform = 'translateX(-50%)';
+  msgDiv.style.padding = '12px 20px';
+  msgDiv.style.borderRadius = '6px';
+  msgDiv.style.zIndex = 1000;
+  msgDiv.style.color = '#fff';
+  msgDiv.style.fontWeight = 'bold';
+  msgDiv.style.fontSize = '1rem';
+
+  if (type === 'success') {
+    msgDiv.style.backgroundColor = '#4caf50'; 
+  } else if (type === 'error') {
+    msgDiv.style.backgroundColor = '#f44336'; 
+    msgDiv.style.backgroundColor = '#2196f3'; 
+  }
+
+  document.body.appendChild(msgDiv);
+  setTimeout(() => {
+    msgDiv.remove();
+  }, 4000);
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  const searchInput = document.querySelector('input[name="query"]');
+  const suggestionBox = document.getElementById('suggestionBox');
+  searchInput.addEventListener('input', async () => {
+    const query = searchInput.value.trim();
+    if (!query) {
+      suggestionBox.classList.add('hidden');
+      return;
+    }
+    const response = await fetch(`/search_suggestions?q=${encodeURIComponent(query)}`);
+    const suggestions = await response.json();
+    suggestionBox.innerHTML = '';
+    if (suggestions.length === 0) {
+      suggestionBox.classList.add('hidden');
+      return;
+    }
+    suggestions.forEach(s => {
+      const li = document.createElement('li');
+      li.textContent = s;
+      li.className = 'px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer';
+      li.addEventListener('click', () => {
+        searchInput.value = s;
+        suggestionBox.classList.add('hidden');
+        searchInput.form.submit();
+      });
+      suggestionBox.appendChild(li);
+    });
+    suggestionBox.classList.remove('hidden');
+  });
+  document.addEventListener('click', (e) => {
+    if (e.target !== searchInput) {
+      suggestionBox.classList.add('hidden');
+    }
+  });
+});
+</script>
+{% endblock %}
