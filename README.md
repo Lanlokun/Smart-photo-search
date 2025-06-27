@@ -39,9 +39,9 @@ Smart Photo Search is a Flask web application that combines YOLO object detectio
 
 5. Initialize the database:
 
-       ```bash
-        flask db upgrade
-        ```
+    ```bash
+    flask db upgrade
+    ```
 
 
 ## Usage
