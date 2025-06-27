@@ -47,9 +47,9 @@ Smart Photo Search is a Flask web application that combines YOLO object detectio
 ## Usage
 
 Run the application locally:
-    ```bash
-        flask run
-    ```
+```bash
+    flask run
+```
 
 
 - Visit http://localhost:5000 in your browser to start uploading and searching photos.
