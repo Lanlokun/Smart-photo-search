@@ -66,12 +66,8 @@ MIT License
 
 Built with YOLO, CLIP, FAISS, Flask, and Tailwind CSS.
 
-## Author 
+## Author
 
-- Mr. Malik Kolawole Lanlokun
-
-- MSc Software Engineering Student
-
-- Nankai University
-
-
+**Mr. Malik Kolawole Lanlokun**  
+MSc Software Engineering Candidate  
+Nankai University
