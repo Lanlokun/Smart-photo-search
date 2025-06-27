@@ -18,6 +18,9 @@ instance/
 *.db
 *.sqlite3
 
+# Uploaded files folder
+./Uploads/
+
 # Pytest cache
 .pytest_cache/
 
@@ -37,6 +40,3 @@ htmlcov/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
-
-# YOLO model weights
-*.pt
